@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authService from "../services/authService.js";
+import { getErrorMsg } from "../util/getErrMsg.js";
 
 const router = Router();
 
@@ -8,16 +9,28 @@ const router = Router();
 ************************/
 // GET
 router.get("/register", (req, res) => {
-  res.render("auth/register");
+  res.render("auth/register", { title: "Register Page" });
 });
 
 // POST
 router.post("/register", async (req, res) => {
   const { username, email, password, rePass } = req.body;
 
-  await authService.register(username, email, password, rePass);
+  try {
+    await authService.register(username, email, password, rePass);
 
-  res.redirect("/auth/login");
+    res.redirect("/auth/login");
+  } catch (err) {
+    // TODO: Make error handling
+    const error = getErrorMsg(err);
+
+    res.render("auth/register", {
+      title: "Register Page",
+      username,
+      email,
+      error,
+    });
+  }
 });
 
 /*##################
@@ -27,18 +40,26 @@ router.post("/register", async (req, res) => {
 // GET
 
 router.get("/login", (req, res) => {
-  res.render("auth/login");
+  res.render("auth/login", { title: "Login Page" });
 });
 
 // POST
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const token = await authService.login(email, password);
+  try {
+    const token = await authService.login(email, password);
 
-  res.cookie("auth", token);
+    res.cookie("auth", token);
 
-  res.redirect("/");
+    res.redirect("/");
+  } catch (err) {
+    // TODO: Error handling;
+
+    const error = getErrorMsg(err);
+
+    res.render("auth/login", { title: "Login Page", email, error });
+  }
 });
 
 /*##################

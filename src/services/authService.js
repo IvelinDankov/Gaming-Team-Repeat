@@ -39,10 +39,6 @@ const login = async (email, password) => {
   return token;
 };
 
-/*##################
-####### LOGOUT ###
-###################*/
-
 export default {
   register,
   login,

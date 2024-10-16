@@ -1,4 +1,4 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model } from "mongoose";
 
 import bcrypt from 'bcrypt';
 
@@ -8,15 +8,15 @@ const userSchema = new Schema({
 
     username: {
         type: String,
-        required: true
+        required: [true, "Username is required!"]
     },
     email: {
         type: String,
-        required: true
+        required: [true, "Email is required!"]
     },
     password: {
         type: String,
-        required: true
+        required: [true, "password is required!"]
     },
 });
 
