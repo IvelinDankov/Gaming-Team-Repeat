@@ -26,9 +26,17 @@ export const authMiddleware = (req, res, next) => {
 
 
 export function isAuth(req, res, next) {
-  if (!req.user.isAuthenticated) {
+  if (!req.user) {
     res.redirect('/auth/login')
   }
 
   return next();
+}
+
+export const isGuest = (req, res, next) => {
+  if (req.user) {
+    return res.redirect('/404');
+  }
+
+  next()
 }

@@ -156,15 +156,15 @@ router.get("/:gameId/edit", isAuth, async (req, res) => {
   const gameId = req.params.gameId;
   const userId = req.user._id
 
+  const isOwner = isGameOwner(gameId, userId);
+
+  if (!isOwner) {
+    return res.redirect("/404");
+  }
 
   try {
     const game = await gameService.getOne(gameId).lean();
     
-      const isOwner = isGameOwner(gameId, userId);
-
-      if (!isOwner) {
-        return res.redirect("/404");
-      }
 
     const platformData = platForm(game);
 
