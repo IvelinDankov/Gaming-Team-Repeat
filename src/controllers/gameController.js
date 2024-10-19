@@ -1,6 +1,7 @@
 import { Router } from "express";
 import gameService from "../services/gameService.js";
 import { getErrorMsg } from "../util/getErrMsg.js";
+import { isAuth } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
@@ -8,7 +9,7 @@ const router = Router();
  ******* Create**********
  ***********************/
 
-router.get("/create", (req, res) => {
+router.get("/create", isAuth, (req, res) => {
   const gameData = req.body;
   const selectData = platForm(gameData);
 
@@ -18,7 +19,7 @@ router.get("/create", (req, res) => {
   });
 });
 
-router.post("/create", async (req, res) => {
+router.post("/create", isAuth, async (req, res) => {
   const gameData = req.body;
   const userId = req.user._id;
   try {
@@ -66,7 +67,9 @@ router.get("/catalog", async (req, res) => {
 
     res.render("game/catalog", { title: "Catalog Page - Gaming Team", games });
   } catch (err) {
-    // TODO: Error Handling
+
+    const error = await getErrorMsg(err);
+    res.render("game/catalog", { title: "Catalog Page - Gaming Team", games, error });
   }
 });
 
@@ -84,8 +87,11 @@ router.get("/:gameId/details", async (req, res) => {
     const bought = game.boughtBy.some((userId) => userId == req.user?._id);
 
     res.render(`game/details`, { title: "Details Page", game, owner, bought });
-  } catch (error) {
-    // TODO: Error Handling
+  } catch (err) {
+    const error = await getErrorMsg(err);
+    res.render(`game/details`, { title: "Details Page", game, owner, bought, error });;
+    
+
   }
 });
 
@@ -93,15 +99,27 @@ router.get("/:gameId/details", async (req, res) => {
  ******* REMOVE GAME **********
  ******************************/
 
-router.get("/:gameId/delete", async (req, res) => {
+router.get("/:gameId/delete", isAuth, async (req, res) => {
   const gameId = req.params.gameId;
+  const userId = req.user._id;
+
+   const isOwner = isGameOwner(gameId, userId);
+
+   if (!isOwner) {
+     return res.redirect("/404");
+   }
 
   try {
     await gameService.remove(gameId);
 
     res.redirect("/games/catalog");
   } catch (err) {
-    // TODO: Error Handling
+    const error = await getErrorMsg(err);
+    res.render(`game/details`, {
+      title: "Details Page",
+      error,
+    });
+
   }
 });
 
@@ -109,48 +127,89 @@ router.get("/:gameId/delete", async (req, res) => {
  ******* BUY GAME **********
  **************************/
 
-router.get("/:gameId/buy", async (req, res) => {
+router.get("/:gameId/buy", isAuth, async (req, res) => {
   const gameId = req.params.gameId;
   const userId = req.user._id;
+  
+  const isOwner = isGameOwner(gameId, userId)
+
+  if (isOwner) {
+    return res.redirect('/404')
+  }
 
   try {
     await gameService.buy(gameId, userId);
 
     res.redirect(`/games/${gameId}/details`);
   } catch (err) {
-    // TODO: Error handling
+    const error = await getErrorMsg(err);
+   
+    res.render({ error });
+
   }
 });
 
 /**************************
  ******* EDIT GAME ********
  **************************/
-router.get("/:gameId/edit", async (req, res) => {
+router.get("/:gameId/edit", isAuth, async (req, res) => {
   const gameId = req.params.gameId;
+  const userId = req.user._id
+
 
   try {
-   const game = await gameService.getOne(gameId).lean();
+    const game = await gameService.getOne(gameId).lean();
+    
+      const isOwner = isGameOwner(gameId, userId);
+
+      if (!isOwner) {
+        return res.redirect("/404");
+      }
 
     const platformData = platForm(game);
+
     res.render("game/edit", {
       title: "Edit Page - Gaming Team",
       game,
       platform: platformData,
     });
   } catch (err) {
-    // TODO: Error Handling
+    const error = await getErrorMsg(err);
+
+     res.render("game/edit", {
+       title: "Edit Page - Gaming Team",
+       game,
+       error
+     });
+
   }
 });
 
-router.post("/:gameId/edit", async (req, res) => {
+router.post("/:gameId/edit", isAuth, async (req, res) => {
   const gameId = req.params.gameId;
   const gameData = req.body;
+  const platformData = platForm(game);
+  const userId = req.user._id;
+
+  const isOwner = isGameOwner(gameId, userId);
+
+  if (!isOwner) {
+    return res.redirect("/404");
+  }
 
   try {
     await gameService.edit(gameId, gameData);
     res.redirect(`/games/${gameId}/details`);
   } catch (err) {
-    // TODO: Error Handling
+     const error = await getErrorMsg(err);
+
+    res.render("game/edit", {
+      title: "Edit Page - Gaming Team",
+      game,
+      platform: platformData,
+      error,
+    });
+
   }
 });
 
@@ -169,5 +228,16 @@ function platForm(gameData) {
 
   return platformData;
 }
+
+async function isGameOwner(gameId, userId) {
+ 
+  const game = await gameService.getOne(gameId);
+  const isOwner = game.owner == userId
+
+  return isOwner
+}
+
+
+
 
 export default router;
