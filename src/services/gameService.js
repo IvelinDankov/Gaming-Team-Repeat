@@ -30,10 +30,15 @@ const buy = (gameId, userId) => {
   return Game.findByIdAndUpdate( gameId, { $push: { boughtBy: userId} } );
 }
 
+const edit = (gameId, gameData) => {
+  return Game.findByIdAndUpdate(gameId, gameData);
+}
+
 export default {
   create,
   getAll,
   getOne,
   remove,
-  buy
+  buy,
+  edit
 };

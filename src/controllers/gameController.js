@@ -37,6 +37,24 @@ router.post("/create", async (req, res) => {
     });
   }
 });
+/**************************
+ ******* search GAME **********
+ **************************/
+
+router.get("/search", async (req, res) => {
+  const filter = req.query;
+
+  const platformData = platForm(filter);
+
+  const games = await gameService.getAll(filter).lean();
+
+  res.render("game/search", {
+    title: "Search Page",
+    games,
+    filter,
+    platform: platformData,
+  });
+});
 
 /**************************
  ******* CATALOG **********
@@ -71,38 +89,20 @@ router.get("/:gameId/details", async (req, res) => {
   }
 });
 
-/**************************
+/******************************
  ******* REMOVE GAME **********
- **************************/
+ ******************************/
 
 router.get("/:gameId/delete", async (req, res) => {
   const gameId = req.params.gameId;
 
   try {
-   await gameService.remove(gameId);
+    await gameService.remove(gameId);
 
     res.redirect("/games/catalog");
   } catch (err) {
     // TODO: Error Handling
   }
-});
-/**************************
- ******* search GAME **********
- **************************/
-
-router.get("/search", async (req, res) => {
-  const filter = req.query;
-
-  const platformData = platForm({});
-
-  const games = await gameService.getAll(filter).lean();
-
-  res.render("game/search", {
-    title: "Search Page",
-    games,
-    platform: platformData,
-    filter,
-  });
 });
 
 /**************************
@@ -122,9 +122,41 @@ router.get("/:gameId/buy", async (req, res) => {
   }
 });
 
-/**********************
+/**************************
+ ******* EDIT GAME ********
+ **************************/
+router.get("/:gameId/edit", async (req, res) => {
+  const gameId = req.params.gameId;
+
+  try {
+   const game = await gameService.getOne(gameId).lean();
+
+    const platformData = platForm(game);
+    res.render("game/edit", {
+      title: "Edit Page - Gaming Team",
+      game,
+      platform: platformData,
+    });
+  } catch (err) {
+    // TODO: Error Handling
+  }
+});
+
+router.post("/:gameId/edit", async (req, res) => {
+  const gameId = req.params.gameId;
+  const gameData = req.body;
+
+  try {
+    await gameService.edit(gameId, gameData);
+    res.redirect(`/games/${gameId}/details`);
+  } catch (err) {
+    // TODO: Error Handling
+  }
+});
+
+/**************************
  ******* HELPERS **********
- ***********************/
+ **************************/
 
 function platForm(gameData) {
   const platforms = ["-------", "PC", "Nintendo", "PS4", "PS5", "XBOX"];
