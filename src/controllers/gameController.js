@@ -44,24 +44,83 @@ router.post("/create", async (req, res) => {
 
 router.get("/catalog", async (req, res) => {
   try {
-    const game = await gameService.getAll().lean();
+    const games = await gameService.getAll().lean();
 
-    res.render("game/catalog", { title: "Catalog Page - Gaming Team", game });
+    res.render("game/catalog", { title: "Catalog Page - Gaming Team", games });
   } catch (err) {
     // TODO: Error Handling
   }
 });
 
-
 /**************************
  ******* DETAILS **********
  **************************/
 
-router.get('/:gameId/details', (req, res) => {
-    
+router.get("/:gameId/details", async (req, res) => {
+  const gameId = req.params.gameId;
 
-  res.render(`game/details`);
- });
+  try {
+    const game = await gameService.getOne(gameId).lean();
+
+    const owner = req.user?._id == game.owner;
+    const bought = game.boughtBy.some((userId) => userId == req.user?._id);
+
+    res.render(`game/details`, { title: "Details Page", game, owner, bought });
+  } catch (error) {
+    // TODO: Error Handling
+  }
+});
+
+/**************************
+ ******* REMOVE GAME **********
+ **************************/
+
+router.get("/:gameId/delete", async (req, res) => {
+  const gameId = req.params.gameId;
+
+  try {
+   await gameService.remove(gameId);
+
+    res.redirect("/games/catalog");
+  } catch (err) {
+    // TODO: Error Handling
+  }
+});
+/**************************
+ ******* search GAME **********
+ **************************/
+
+router.get("/search", async (req, res) => {
+  const filter = req.query;
+
+  const platformData = platForm({});
+
+  const games = await gameService.getAll(filter).lean();
+
+  res.render("game/search", {
+    title: "Search Page",
+    games,
+    platform: platformData,
+    filter,
+  });
+});
+
+/**************************
+ ******* BUY GAME **********
+ **************************/
+
+router.get("/:gameId/buy", async (req, res) => {
+  const gameId = req.params.gameId;
+  const userId = req.user._id;
+
+  try {
+    await gameService.buy(gameId, userId);
+
+    res.redirect(`/games/${gameId}/details`);
+  } catch (err) {
+    // TODO: Error handling
+  }
+});
 
 /**********************
  ******* HELPERS **********
@@ -75,8 +134,6 @@ function platForm(gameData) {
     option: platform,
     selected: platform === gameData.platform ? "selected" : "",
   }));
-
-  console.log(platformData);
 
   return platformData;
 }

@@ -8,7 +8,7 @@
                 <label>Platform:</label>
                 <select id="platform" name="platform">
                     {{#each platform}}
-                    <option value="{{value}}" {{selected}}>{{option}}</option>
+                    {{>options}}
                     {{/each}}
                     {{!-- <option value="Nintendo">Nintendo</option>
                     <option value="PS4">PS4</option>
